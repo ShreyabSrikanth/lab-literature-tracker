@@ -1,0 +1,4 @@
+name: Weekly Literature Search
+on:
+  workflow_dispatch:
+jobs:
