@@ -1,32 +1,24 @@
 name: Weekly Literature Search
-
 on:
   schedule:
     - cron: "0 9 * * 1"
   workflow_dispatch:
-
 jobs:
   update-tables:
     runs-on: ubuntu-latest
-
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
       - name: Install dependencies
         run: pip install -r requirements.txt
-
       - name: Ensure data folder exists
         run: mkdir -p data
-
       - name: Run literature search
         run: python search_and_update.py
-
       - name: Read run summary
         id: summary
         run: |
@@ -39,7 +31,6 @@ jobs:
             echo "cgm=0" >> $GITHUB_OUTPUT
             echo "omics=0" >> $GITHUB_OUTPUT
           fi
-
       - name: Commit updated spreadsheet
         run: |
           git config user.name  "github-actions[bot]"
