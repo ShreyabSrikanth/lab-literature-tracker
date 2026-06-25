@@ -1,50 +1,32 @@
-# .github/workflows/weekly_update.yml
-#
-# This file tells GitHub to run your Python script automatically every week.
-# You don't need to do anything once this is set up — GitHub runs it for you.
-#
-# Schedule: Every Monday at 9:00 AM UTC
-# You can also trigger it manually from the GitHub Actions tab anytime.
-
 name: Weekly Literature Search
 
 on:
-  # Run on a schedule — every Monday at 9am UTC
   schedule:
     - cron: "0 9 * * 1"
-
-  # Also allow manual trigger from GitHub Actions tab
-  # (useful for testing or running on demand)
   workflow_dispatch:
 
 jobs:
   update-tables:
-    runs-on: ubuntu-latest   # GitHub provides a free Linux machine
+    runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Download your repo onto the GitHub machine
       - name: Check out repository
         uses: actions/checkout@v4
 
-      # Step 2: Set up Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      # Step 3: Install the Python packages your script needs
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      # Step 4: Create the data folder if it doesn't exist yet
       - name: Ensure data folder exists
         run: mkdir -p data
 
-      # Step 5: Run your search script
       - name: Run literature search
         run: python search_and_update.py
 
-      # Step 6: Read how many new rows were added (for the commit message)
       - name: Read run summary
         id: summary
         run: |
@@ -58,16 +40,13 @@ jobs:
             echo "omics=0" >> $GITHUB_OUTPUT
           fi
 
-      # Step 7: Commit the updated spreadsheet back to the repo
-      # This is what makes the table "persist" — it saves the new version
       - name: Commit updated spreadsheet
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/
-          # Only commit if something actually changed
           if git diff --staged --quiet; then
-            echo "No changes to commit (no new papers found this week)."
+            echo "No changes to commit."
           else
             git commit -m "Auto-update: +${{ steps.summary.outputs.cgm }} CGM rows, +${{ steps.summary.outputs.omics }} omics rows ($(date +%Y-%m-%d))"
             git push
