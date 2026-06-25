@@ -1,0 +1,69 @@
+# .github/workflows/weekly_update.yml
+
+# Schedule: Every Monday at 9:00 AM UTC
+
+name: Weekly Literature Search
+
+on:
+  Run on a schedule — every Monday at 1am PST
+  schedule:
+    - cron: "0 9 * * 1"
+
+  # Also allow manual trigger from GitHub Actions tab
+  # (useful for testing or running on demand)
+  workflow_dispatch:
+
+jobs:
+  update-tables:
+    runs-on: ubuntu-latest   
+
+    steps:
+      # download repo
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      # set up python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # install python packages
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # make sure data folder exists
+      - name: Ensure data folder exists
+        run: mkdir -p data
+
+      # run search
+      - name: Run literature search
+        run: python search_and_update.py
+
+      # read changes
+      - name: Read run summary
+        id: summary
+        run: |
+          if [ -f data/last_run_summary.json ]; then
+            CGM=$(python -c "import json; d=json.load(open('data/last_run_summary.json')); print(d['cgm_rows_added'])")
+            OMICS=$(python -c "import json; d=json.load(open('data/last_run_summary.json')); print(d['omics_rows_added'])")
+            echo "cgm=$CGM" >> $GITHUB_OUTPUT
+            echo "omics=$OMICS" >> $GITHUB_OUTPUT
+          else
+            echo "cgm=0" >> $GITHUB_OUTPUT
+            echo "omics=0" >> $GITHUB_OUTPUT
+          fi
+
+      # commit back to the repo
+      - name: Commit updated spreadsheet
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          # Only commit if something actually changed
+          if git diff --staged --quiet; then
+            echo "No changes to commit (no new papers found this week)."
+          else
+            git commit -m "Auto-update: +${{ steps.summary.outputs.cgm }} CGM rows, +${{ steps.summary.outputs.omics }} omics rows ($(date +%Y-%m-%d))"
+            git push
+          fi
